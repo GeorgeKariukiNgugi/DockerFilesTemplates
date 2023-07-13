@@ -1,0 +1,6 @@
+version: "2"
+services:
+  waf_apache_configuration:
+    build: ./waf_apache
+    ports:
+      - "8001:80"
