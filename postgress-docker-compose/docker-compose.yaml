@@ -1,9 +1,9 @@
-version: '3.9'
+version: '3.3'
 services:
   postgres:
     image: postgres:latest
     ports: 
-      - 5433:5432
+      - 5434:5432
     container_name: postgres
     restart: always
     environment:
