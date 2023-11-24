@@ -1,0 +1,57 @@
+version: '3'
+services:
+  redis:
+    container_name: sentryredis    
+    image: redis:6.0-alpine
+    volumes:
+      - sentry-redis:/data
+    networks:      
+      sentry_network:  
+        ipv4_address: 172.80.20.4
+
+  postgres:
+    image: postgres:12
+    container_name: sentrypostgres
+    volumes:
+      - sentry-db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: a_secure_password
+      POSTGRES_USER: sentry
+      POSTGRES_DB: sentry
+    networks:      
+      sentry_network:  
+        ipv4_address: 172.80.20.2
+
+  sentry:
+    container_name: sentry
+    image: sentry:latest
+    environment:
+      SENTRY_DB_NAME: sentry
+      SENTRY_SECRET_KEY: 'a_very_secret_key'
+      SENTRY_POSTGRES_HOST: sentrypostgres
+      SENTRY_DB_USER: sentry
+      SENTRY_DB_PASSWORD: a_secure_password
+      SENTRY_REDIS_HOST: sentryredis
+    depends_on:
+      - redis
+      - postgres
+    ports:
+      - "9000:9000"
+    volumes:
+      - sentry-data:/var/lib/sentry/files
+    networks:      
+      sentry_network:  
+        ipv4_address: 172.80.20.3
+
+volumes:
+  sentry-data:
+  sentry-redis:
+  sentry-db:
+
+networks:
+  sentry_network:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: 172.80.20.1/24
+
