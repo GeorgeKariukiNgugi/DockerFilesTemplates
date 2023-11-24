@@ -1,0 +1,20 @@
+version: '3'
+services:
+  solr:
+    image: solr:9.4.0
+    ports:
+      - "8983:8983"
+    volumes:
+      - solr_data:/var/solr
+      - ./sample_techproducts_configs:/opt/solr-9.4.0/server/solr/configsets/sample_techproducts_configs
+    environment:
+      - SOLR_HOME=/var/solr
+      - SOLR_OPTS=-Dsolr.allowPaths=/opt/solr-9.4.0/server/solr/configsets/sample_techproducts_configs
+    command:
+      - solr-precreate
+      - mycore
+      - /opt/solr-9.4.0/server/solr/configsets/sample_techproducts_configs
+
+volumes:
+  solr_data:
+
