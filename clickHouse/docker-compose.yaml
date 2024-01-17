@@ -1,0 +1,22 @@
+version: '3.7'
+services:
+  clickhouse-server:
+    image: yandex/clickhouse-server
+    ports:
+      - "8123:8123"  # HTTP interface
+      - "9000:9000"  # Native client interface
+    volumes:
+      - ./clickhouse_data:/var/lib/clickhouse  # Persist data
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+  clickhouse-client:
+    image: yandex/clickhouse-client
+    depends_on:
+      - clickhouse-server
+    entrypoint:
+      - /bin/sleep
+      - infinity
+

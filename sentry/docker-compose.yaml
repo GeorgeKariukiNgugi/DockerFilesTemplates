@@ -1,6 +1,7 @@
 version: '3'
 services:
   redis:
+    restart: always
     container_name: sentryredis    
     image: redis:6.0-alpine
     volumes:
@@ -10,6 +11,7 @@ services:
         ipv4_address: 172.80.20.4
 
   postgres:
+    restart: always
     image: postgres:12
     container_name: sentrypostgres
     volumes:
@@ -23,6 +25,7 @@ services:
         ipv4_address: 172.80.20.2
 
   sentry:
+    restart: always
     container_name: sentry
     image: sentry:latest
     environment:
