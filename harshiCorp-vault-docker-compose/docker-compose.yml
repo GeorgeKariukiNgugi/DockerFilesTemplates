@@ -1,13 +1,46 @@
 version: '2'
 services:
-    myvault:
-        image: vault
-        container_name: myvault
-        ports:
-          - "8201:8200"
-        volumes:
-          - ./file:/vault/file:rw
-          - ./config:/vault/config:rw
-        cap_add:
-          - IPC_LOCK
-        entrypoint: vault server -config=/vault/config/vault.json
+    # myvault:
+    #     image: vault
+    #     container_name: myvault
+    #     ports:
+    #       - "8201:8200"
+    #     volumes:
+    #       - ./file:/vault/file:rw
+    #       - ./config:/vault/config:rw
+    #     cap_add:
+    #       - IPC_LOCK
+    #     entrypoint: vault server -config=/vault/config/vault.json
+  cybota_vault:
+    image: hashicorp/vault:1.16
+    hostname: cybota_cloud_hashicorp_vault
+    restart: always
+    cap_add:
+      - IPC_LOCK
+    command:
+      - "server"
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR}
+      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_LOCAL_CONFIG: |
+        storage "postgresql" {
+          connection_url = "postgres://${POSTGRES_USER}:${POSTGRES_PASS}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+          table = "vault_kv_store"
+        }
+
+        listener "tcp" {
+          address = "0.0.0.0:8200"
+          tls_disable = true
+        }
+
+        api_addr = "http://0.0.0.0:5487"
+        disable_mlock = true
+        ui = true
+        log_level = "info"
+    volumes:
+      - vault_data:/vault/file
+    healthcheck:
+      test: ["CMD", "vault", "-v"]
+      interval: "10s"
+      timeout: "5s"
+      retries: 5

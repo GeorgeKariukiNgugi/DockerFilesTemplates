@@ -1,0 +1,124 @@
+version: '3.8'
+services:
+  cybota_postgres:
+    hostname: cybotacloudcorepostgresdb
+    image: demo.cybota.net:5000/cybota_lighthouse_postgres:${BRANCH_NAME}
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      KEYCLOAK_DB: ${KEYCLOAK_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASS}
+      METABASE_DB: ${METABASE_DB}
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+    networks:
+      cybotacloud:
+        ipv4_address: 172.10.210.7
+    ports:
+      - "5435:5432"        
+        
+  cybota_vault:
+    image: hashicorp/vault:1.16
+    hostname: cybota_cloud_hashicorp_vault
+    restart: always
+    cap_add:
+      - IPC_LOCK
+    command:
+      - "server"
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR}
+      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_LOCAL_CONFIG: |
+        storage "postgresql" {
+          connection_url = "postgres://${POSTGRES_USER}:${POSTGRES_PASS}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+          table = "vault_kv_store"
+        }
+
+        listener "tcp" {
+          address = "0.0.0.0:8200"
+          tls_disable = true
+        }
+
+        api_addr = "http://0.0.0.0:5487"
+        disable_mlock = true
+        ui = true
+        log_level = "info"
+    depends_on:
+      - cybota_postgres
+    volumes:
+      - vault_data:/vault/file
+    healthcheck:
+      test: ["CMD", "vault", "-v"]
+      interval: "10s"
+      timeout: "5s"
+      retries: 5
+    networks:
+      cybotacloud:
+        ipv4_address: 172.10.210.25
+    ports:
+      - "5487:5487"        
+
+  cybota_keycloak:
+    hostname: cybotacloudcorekeycloak
+    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
+    restart: always
+    environment:
+      - KEYCLOAK_USER=${KEYCLOAK_USER}
+      - KEYCLOAK_PASSWORD=${KEYCLOAK_PASS}
+      - KEYCLOAK_ADMIN=${KEYCLOAK_USER}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_PASS}
+      - DB_DATABASE=${KEYCLOAK_DB}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASS}
+      - DB_ADDR=${POSTGRES_HOST}
+      - DB_VENDOR=${KEYCLOAK_DATABASE_VENDOR}
+    depends_on:
+      - cybota_postgres      
+    networks:
+      cybotacloud:
+        ipv4_address: 172.10.210.8
+    ports:
+      - "8024:8080"        
+
+  cybota_mongo:
+    hostname: cybotacloudmongo
+    image: demo.cybota.net:5000/cybota_lighthouse_mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS}
+      MONGO_DB: ${MONGO_DB}
+      DUMP_DIR: ${MONGO_DUMP_DIR}
+    deploy:
+      resources:
+        limits:
+          memory: 1gb
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    volumes:
+      - mongo_db:/data/db
+      - mongo_config:/data/configdb
+    networks:
+      cybotacloud:
+        ipv4_address: 172.10.210.9
+    ports:
+      - "27018:27017"
+
+networks:
+  cybotacloud:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.10.210.0/24
+
+volumes:
+  postgres_db:
+  mongo_db:
+  mongo_config:
+  redis_data:  
+  postgresql_data:  
+  vault_data:

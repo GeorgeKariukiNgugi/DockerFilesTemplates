@@ -25,7 +25,7 @@ services:
     restart: always
     image: postgres:${POSTGRES_VERSION}
     ports:
-      - "5434:5432"
+      - "5435:5432"
     environment:
       - POSTGRES_USER=${KEYCLOAK_DATABASE_USER}
       - POSTGRES_PASSWORD=${KEYCLOAK_DATABASE_PASSWORD}
